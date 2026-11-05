@@ -1,0 +1,85 @@
+# Maven build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Maven wrapper local cache
+.mvn/wrapper/*.lastUpdated
+
+# Java compiled and packaged files
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Logs and runtime output
+*.log
+logs/
+*.out
+
+# Spring Boot local configuration and generated files
+application-*.properties
+application-*.yml
+application-*.yaml
+!src/main/resources/application.properties
+
+# Environment files and local overrides
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
+
+# Credentials, certificates, and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+secrets.json
+secrets/
+secret/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# OS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+
+# Temporary and editor files
+*.swp
+*.swo
+*~
+.#*
