@@ -96,7 +96,7 @@ Configure these repository settings before enabling GKE deployment:
 - Secret `GCP_WORKLOAD_IDENTITY_PROVIDER`: the full Google Workload Identity Provider resource name
 - Secret `GCP_SERVICE_ACCOUNT`: the Google service account used by GitHub Actions
 - Variable `GCP_PROJECT_ID`: Google Cloud project ID
-- Variable `GKE_CLUSTER_NAME`: GKE cluster name
+- Variable `GKE_CLUSTER`: GKE cluster name
 - Variable `GKE_LOCATION`: GKE region or zone
 
 The Google service account needs permission to obtain GKE credentials and deploy to the target cluster. Protect `main` and require the build workflow status check before merging.

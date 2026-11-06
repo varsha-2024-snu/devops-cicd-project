@@ -86,11 +86,30 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Validate GCP deployment configuration
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
+          GKE_LOCATION: ${{ vars.GKE_LOCATION }}
+        run: |
+          set -euo pipefail
+          for name in WIF_PROVIDER GCP_SERVICE_ACCOUNT GCP_PROJECT_ID GKE_CLUSTER GKE_LOCATION; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Required GitHub secret or variable is missing: ${name}"
+              exit 1
+            fi
+          done
+
       - name: Authenticate to Google Cloud with Workload Identity Federation
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
@@ -116,11 +135,30 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Validate GCP deployment configuration
+        env:
+          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
+          GKE_LOCATION: ${{ vars.GKE_LOCATION }}
+        run: |
+          set -euo pipefail
+          for name in WIF_PROVIDER GCP_SERVICE_ACCOUNT GCP_PROJECT_ID GKE_CLUSTER GKE_LOCATION; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Required GitHub secret or variable is missing: ${name}"
+              exit 1
+            fi
+          done
+
       - name: Authenticate to Google Cloud with Workload Identity Federation
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
