@@ -81,6 +81,44 @@ Run the full verification lifecycle, including the JaCoCo coverage check:
 
 JaCoCo generates the XML report at `target/site/jacoco/jacoco.xml`. The `target/` directory and all generated build output are excluded from Git.
 
+## GitHub Actions, Docker, GHCR, and GKE
+
+The [CI workflow](.github/workflows/ci.yml) runs `./mvnw -B verify` on every push and pull request. On a push to `main`, the Docker image is built and published to GitHub Container Registry (GHCR), then deployed to Google Kubernetes Engine (GKE). Publishing requires the build-and-test job to pass, and deployment requires the image-publish job to pass.
+
+The image definition is in [`Dockerfile`](Dockerfile), and Kubernetes resources are in [`k8s/`](k8s/). The workflow uses the GitHub-provided `GITHUB_TOKEN` for GHCR and Google Workload Identity Federation for GKE; no long-lived cloud credentials are stored in the repository.
+
+Configure these repository settings before enabling GKE deployment:
+
+- Secret `GCP_WORKLOAD_IDENTITY_PROVIDER`: the full Google Workload Identity Provider resource name
+- Secret `GCP_SERVICE_ACCOUNT`: the Google service account used by GitHub Actions
+- Variable `GCP_PROJECT_ID`: Google Cloud project ID
+- Variable `GKE_CLUSTER_NAME`: GKE cluster name
+- Variable `GKE_LOCATION`: GKE region or zone
+
+The Google service account needs permission to obtain GKE credentials and deploy to the target cluster. Protect `main` and require the build workflow status check before merging.
+
+## GitLens demonstration
+
+GitLens is a developer-side Visual Studio Code extension, not a GitHub Actions job. Install **GitLens — Git supercharged** from the VS Code Extensions view, then open this repository.
+
+Use the GitLens views and commands to demonstrate:
+
+1. **Commit history:** Open the GitLens Source Control view and expand **Commits**, or run `GitLens: Show Commit Graph` from the Command Palette.
+2. **Git blame:** Open a tracked file, right-click in the editor, and choose **GitLens: Toggle File Blame**. Hover a blame annotation to see the responsible commit and author.
+3. **File history:** Right-click a file in Explorer or Source Control and choose **GitLens: Open File History**.
+4. **Commit comparisons:** Open the commit graph, select a commit, and compare it with its parent or another selected commit. You can also use **GitLens: Compare References**.
+5. **Branch visualization:** Use the commit graph to show local and remote branches, merge points, and the current branch. The Source Control view also shows branch status and changes.
+
+Useful terminal commands for the same demonstration are:
+
+```bash
+git log --oneline --graph --decorate --all
+git blame src/main/java/com/example/taskmanager/service/TaskService.java
+git log --follow -- README.md
+git diff main..feature/gitlens-demo
+git branch --all --verbose
+```
+
 ## API endpoints
 
 | Method | Endpoint | Description | Success |
@@ -126,4 +164,4 @@ Invalid input returns `400 Bad Request`; a task ID that does not exist returns `
 
 ## Repository hygiene
 
-The root [`.gitignore`](.gitignore) excludes Java/Maven build output, IDE metadata, local environment files, credentials, certificates, private keys, logs, and OS files. Do not commit real credentials or secrets. Use environment variables or an untracked local configuration file for any future secret-backed integration.
+The root [`.gitignore`](.gitignore) excludes Java/Maven build output, IDE metadata, local environment files, credentials, certificates, private keys, logs, and OS files. Do not commit real credentials or secrets. Use GitHub Actions secrets, repository variables, environment variables, or an untracked local configuration file for integrations.
