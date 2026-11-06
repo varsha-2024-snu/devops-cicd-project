@@ -1,0 +1,13 @@
+services:
+  taskmanager:
+    image: ${IMAGE_NAME:-ghcr.io/varsha-2024-snu/devops-cicd-project}:${IMAGE_TAG:-latest}
+    container_name: taskmanager-local
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s

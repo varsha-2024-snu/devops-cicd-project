@@ -1,44 +1,41 @@
 # Troubleshooting
 
-## Maven or Java version
+## Docker Desktop is unavailable
 
-Check `java -version`. The project requires JDK 21. Use the wrapper (`./mvnw`) rather than relying on a global Maven installation.
-
-## Docker daemon unavailable
-
-Start Docker Desktop and retry:
+Start Docker Desktop and verify:
 
 ```bash
 docker info
-docker build -t taskmanager:local .
+docker compose version
 ```
 
-## GHCR permission denied
+## GHCR pull fails
 
-Confirm the workflow has `packages: write`, the package belongs to the repository, and the package visibility/access settings permit the intended GKE pull.
+Confirm the image tag came from a successful **Publish Docker image to GHCR** job. For a private package, run `docker login ghcr.io` with a package-read token. Never commit that token.
 
-## GKE authentication fails
-
-Check the provider and service account secret values, repository/branch attribute conditions, the `id-token: write` permission, and the service account IAM grants. Do not add a JSON key to the repository.
-
-## Deployment does not roll out
+## Container is unhealthy
 
 ```bash
-kubectl get pods -l app=taskmanager
-kubectl describe deployment taskmanager
-kubectl describe pods -l app=taskmanager
-kubectl rollout status deployment/taskmanager
+docker compose ps
+docker compose logs --tail=80 taskmanager
+curl --fail http://localhost:8080/api/health
 ```
 
-Check that the GHCR image is available to the cluster. A private package needs an image pull secret or an appropriate node/workload identity configuration.
+The application may need its configured start period before the health check passes.
 
-## LoadBalancer has no address
+## Port 8080 is already in use
 
-Wait for provisioning and inspect:
+Stop the process using the port or choose a different host port temporarily:
 
 ```bash
-kubectl get service taskmanager --watch
-kubectl describe service taskmanager
+docker compose down
+lsof -nP -iTCP:8080 -sTCP:LISTEN
 ```
 
-The workflow intentionally fails after its bounded five-minute health-check window rather than waiting forever.
+## Rollback
+
+Use a full commit SHA that was previously published successfully:
+
+```bash
+./scripts/rollback-local.sh KNOWN_GOOD_SHA
+```

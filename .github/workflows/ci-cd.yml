@@ -5,14 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
-
-concurrency:
-  group: deployment-${{ github.ref }}
-  cancel-in-progress: false
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
@@ -45,10 +40,21 @@ jobs:
             target/site/jacoco/
           if-no-files-found: warn
 
-  publish-image:
-    name: Build and publish Docker image
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+  build-image:
+    name: Build Docker image
     needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --tag "${IMAGE_NAME}:${GITHUB_SHA}" .
+
+  publish-image:
+    name: Publish Docker image to GHCR
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-image
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -73,115 +79,3 @@ jobs:
           context: .
           push: true
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-  deploy-to-gke:
-    name: Deploy exact image to GKE
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-    needs: publish-image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Validate GCP deployment configuration
-        env:
-          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
-          GKE_LOCATION: ${{ vars.GKE_LOCATION }}
-        run: |
-          set -euo pipefail
-          for name in WIF_PROVIDER GCP_SERVICE_ACCOUNT GCP_PROJECT_ID GKE_CLUSTER GKE_LOCATION; do
-            if [ -z "${!name}" ]; then
-              echo "::error::Required GitHub secret or variable is missing: ${name}"
-              exit 1
-            fi
-          done
-
-      - name: Authenticate to Google Cloud with Workload Identity Federation
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ vars.GKE_CLUSTER }}
-          location: ${{ vars.GKE_LOCATION }}
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Apply exact image manifest
-        env:
-          IMAGE: ${{ env.IMAGE_NAME }}:${{ github.sha }}
-        run: |
-          sed "s|IMAGE_TAG|${IMAGE}|g" k8s/deployment.yaml | kubectl apply -f -
-          kubectl apply -f k8s/service.yaml
-          kubectl rollout status deployment/taskmanager --timeout=180s
-
-  verify-deployment:
-    name: Verify live deployment
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
-    needs: deploy-to-gke
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Validate GCP deployment configuration
-        env:
-          WIF_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          GKE_CLUSTER: ${{ vars.GKE_CLUSTER }}
-          GKE_LOCATION: ${{ vars.GKE_LOCATION }}
-        run: |
-          set -euo pipefail
-          for name in WIF_PROVIDER GCP_SERVICE_ACCOUNT GCP_PROJECT_ID GKE_CLUSTER GKE_LOCATION; do
-            if [ -z "${!name}" ]; then
-              echo "::error::Required GitHub secret or variable is missing: ${name}"
-              exit 1
-            fi
-          done
-
-      - name: Authenticate to Google Cloud with Workload Identity Federation
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ vars.GKE_CLUSTER }}
-          location: ${{ vars.GKE_LOCATION }}
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Wait for the LoadBalancer health endpoint
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in {1..30}; do
-            endpoint="$(kubectl get service taskmanager -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-            if [ -z "$endpoint" ]; then
-              endpoint="$(kubectl get service taskmanager -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-            fi
-            if [ -n "$endpoint" ] && curl --fail --silent --show-error --max-time 5 "http://${endpoint}/api/health"; then
-              exit 0
-            fi
-            sleep 10
-          done
-          echo "The taskmanager service did not become healthy within 300 seconds." >&2
-          kubectl get service taskmanager
-          kubectl get pods -l app=taskmanager
-          exit 1

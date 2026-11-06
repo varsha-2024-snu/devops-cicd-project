@@ -26,7 +26,7 @@ A REST API for managing student tasks, built with Java 21 and Spring Boot 3.4.
 - JaCoCo
 - Docker
 - GitHub Container Registry (GHCR)
-- Kubernetes and Google Kubernetes Engine (GKE)
+- Docker Compose for local deployment
 - GitLens for VS Code
 
 ## Prerequisites
@@ -85,21 +85,39 @@ Run the full verification lifecycle, including the JaCoCo coverage check:
 
 JaCoCo generates the XML report at `target/site/jacoco/jacoco.xml`. The `target/` directory and all generated build output are excluded from Git.
 
-## GitHub Actions, Docker, GHCR, and GKE
+## GitHub Actions, Docker, and GHCR
 
-The [CI/CD workflow](.github/workflows/ci-cd.yml) runs `./mvnw -B clean verify` on every push and pull request. On a push to `main`, the Docker image is built and published to GitHub Container Registry (GHCR), then deployed to Google Kubernetes Engine (GKE). Publishing requires the build-and-test job to pass, and deployment requires the image-publish job to pass.
+The [CI/CD workflow](.github/workflows/ci-cd.yml) runs `./mvnw -B clean verify` on every push and pull request, then builds the Docker image after tests pass. On pushes to `main`, it publishes `ghcr.io/<owner>/<repository>:<full-commit-sha>` using the GitHub-provided `GITHUB_TOKEN`.
 
-The image definition is in [`Dockerfile`](Dockerfile), and Kubernetes resources are in [`k8s/`](k8s/). The workflow uses the GitHub-provided `GITHUB_TOKEN` for GHCR and Google Workload Identity Federation for GKE; no long-lived cloud credentials are stored in the repository.
+GitHub-hosted runners build and publish images only; they do not deploy automatically to a developer's Mac. Local deployment is manually initiated with Docker Desktop and the scripts below. A self-hosted runner on the Mac would be required for a GitHub Actions job to control that machine.
 
-Configure these repository settings before enabling GKE deployment:
+## Local Docker deployment
 
-- Secret `GCP_WORKLOAD_IDENTITY_PROVIDER`: the full Google Workload Identity Provider resource name
-- Secret `GCP_SERVICE_ACCOUNT`: the Google service account used by GitHub Actions
-- Variable `GCP_PROJECT_ID`: Google Cloud project ID
-- Variable `GKE_CLUSTER`: GKE cluster name
-- Variable `GKE_LOCATION`: GKE region or zone
+Start Docker Desktop, then deploy a selected GHCR image:
 
-The Google service account needs permission to obtain GKE credentials and deploy to the target cluster. Protect `main` and require the build workflow status check before merging.
+```bash
+./scripts/deploy-local.sh <commit-sha>
+```
+
+The script pulls the exact image tag, recreates `taskmanager-local`, and waits for `GET /api/health`. The Compose health check also monitors the container. To use the default `latest` tag:
+
+```bash
+./scripts/deploy-local.sh
+```
+
+Roll back to a previously known-good SHA:
+
+```bash
+./scripts/rollback-local.sh <known-good-commit-sha>
+```
+
+Find an exact image tag from a successful GitHub Actions run by opening the run for the commit in the repository's **Actions** tab, confirming the **Publish Docker image to GHCR** job passed, and using that run's commit SHA. The image is then:
+
+```text
+ghcr.io/varsha-2024-snu/devops-cicd-project:<commit-sha>
+```
+
+For a private GHCR package, authenticate locally first with `docker login ghcr.io`; never put a token in a script or Compose file.
 
 ## GitLens demonstration
 
