@@ -24,6 +24,10 @@ A REST API for managing student tasks, built with Java 21 and Spring Boot 3.4.
 - Maven Wrapper
 - JUnit 5 and Mockito
 - JaCoCo
+- Docker
+- GitHub Container Registry (GHCR)
+- Kubernetes and Google Kubernetes Engine (GKE)
+- GitLens for VS Code
 
 ## Prerequisites
 
@@ -115,7 +119,7 @@ Useful terminal commands for the same demonstration are:
 git log --oneline --graph --decorate --all
 git blame src/main/java/com/example/taskmanager/service/TaskService.java
 git log --follow -- README.md
-git diff main..feature/gitlens-demo
+git diff main..feature/gitlens-devops
 git branch --all --verbose
 ```
 
