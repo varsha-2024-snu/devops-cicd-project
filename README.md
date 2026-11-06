@@ -87,7 +87,7 @@ JaCoCo generates the XML report at `target/site/jacoco/jacoco.xml`. The `target/
 
 ## GitHub Actions, Docker, GHCR, and GKE
 
-The [CI workflow](.github/workflows/ci.yml) runs `./mvnw -B verify` on every push and pull request. On a push to `main`, the Docker image is built and published to GitHub Container Registry (GHCR), then deployed to Google Kubernetes Engine (GKE). Publishing requires the build-and-test job to pass, and deployment requires the image-publish job to pass.
+The [CI/CD workflow](.github/workflows/ci-cd.yml) runs `./mvnw -B clean verify` on every push and pull request. On a push to `main`, the Docker image is built and published to GitHub Container Registry (GHCR), then deployed to Google Kubernetes Engine (GKE). Publishing requires the build-and-test job to pass, and deployment requires the image-publish job to pass.
 
 The image definition is in [`Dockerfile`](Dockerfile), and Kubernetes resources are in [`k8s/`](k8s/). The workflow uses the GitHub-provided `GITHUB_TOKEN` for GHCR and Google Workload Identity Federation for GKE; no long-lived cloud credentials are stored in the repository.
 
@@ -169,3 +169,5 @@ Invalid input returns `400 Bad Request`; a task ID that does not exist returns `
 ## Repository hygiene
 
 The root [`.gitignore`](.gitignore) excludes Java/Maven build output, IDE metadata, local environment files, credentials, certificates, private keys, logs, and OS files. Do not commit real credentials or secrets. Use GitHub Actions secrets, repository variables, environment variables, or an untracked local configuration file for integrations.
+
+Detailed guides are available in [`docs/SETUP.md`](docs/SETUP.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`docs/PIPELINE.md`](docs/PIPELINE.md), [`docs/DEMO.md`](docs/DEMO.md), [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md), and [`docs/REPORT.md`](docs/REPORT.md).

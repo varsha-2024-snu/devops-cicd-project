@@ -6,6 +6,11 @@ metadata:
     app: taskmanager
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: taskmanager
@@ -14,10 +19,18 @@ spec:
       labels:
         app: taskmanager
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: taskmanager
-          image: ghcr.io/varsha-2024-snu/devops-cicd-project:latest
-          imagePullPolicy: Always
+          image: ghcr.io/varsha-2024-snu/devops-cicd-project:IMAGE_TAG
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - name: http
               containerPort: 8080
