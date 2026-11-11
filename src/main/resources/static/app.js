@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const state = { tasks: [], editingId: null };
+    const state = { tasks: [], editingId: null, modalTrigger: null };
     const $ = (id) => document.getElementById(id);
     const elements = {
         list: $("taskList"), form: $("taskForm"), modal: $("taskModal"), title: $("titleInput"),
@@ -62,7 +62,7 @@
         const query = elements.search.value.trim().toLowerCase();
         const filter = elements.filter.value;
         const visible = state.tasks.filter((task) =>
-            (!query || task.title.toLowerCase().includes(query) || (task.description || "").toLowerCase().includes(query)) &&
+            (!query || String(task.title || "").toLowerCase().includes(query) || (task.description || "").toLowerCase().includes(query)) &&
             (filter === "ALL" || task.status === filter)
         );
         if (!visible.length) {
@@ -78,7 +78,8 @@
         const status = task.status || "TODO";
         const statusLabel = { TODO: "To do", IN_PROGRESS: "In progress", COMPLETED: "Completed" }[status] || status;
         const statusClass = { TODO: "status-todo", IN_PROGRESS: "status-progress", COMPLETED: "status-completed" }[status] || "status-todo";
-        const date = task.createdAt ? new Date(task.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Recently added";
+        const dateValue = task.createdAt ? new Date(task.createdAt) : null;
+        const date = dateValue && !Number.isNaN(dateValue.getTime()) ? dateValue.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Recently added";
         return `<article class="task-row"><div><div class="task-title">${escapeHtml(task.title)}</div><div class="task-description">${escapeHtml(task.description || "No description added")}</div></div><div><span class="status-badge ${statusClass}">${escapeHtml(statusLabel)}</span></div><div class="task-date">${escapeHtml(date)}</div><div class="task-actions"><button class="icon-button" data-edit="${task.id}" title="Edit task" aria-label="Edit ${escapeHtml(task.title)}">✎</button><button class="icon-button delete" data-delete="${task.id}" title="Delete task" aria-label="Delete ${escapeHtml(task.title)}">⌫</button></div></article>`;
     }
 
@@ -86,8 +87,9 @@
         return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
     }
 
-    function openModal(id) {
+    function openModal(id, trigger) {
         state.editingId = id || null;
+        state.modalTrigger = trigger || document.activeElement;
         const task = id ? state.tasks.find((item) => item.id === id) : null;
         $("modalKicker").textContent = task ? "EDIT TASK" : "NEW TASK";
         $("modalTitle").textContent = task ? "Update task details" : "Create a new task";
@@ -106,6 +108,9 @@
         elements.modal.hidden = true;
         document.body.style.overflow = "";
         state.editingId = null;
+        const trigger = state.modalTrigger;
+        state.modalTrigger = null;
+        if (trigger && document.contains(trigger)) trigger.focus();
     }
 
     async function saveTask(event) {
@@ -163,15 +168,24 @@
     function showError(title, message) { elements.list.innerHTML = `<div class="error-state"><p>${escapeHtml(title)}</p><small>${escapeHtml(message)} · <button class="secondary-button" id="retryButton">Retry</button></small></div>`; $("retryButton").addEventListener("click", loadTasks); }
     function toast(message, type) { const item = document.createElement("div"); item.className = `toast ${type}`; item.textContent = message; $("toastContainer").appendChild(item); setTimeout(() => item.remove(), 4000); }
 
-    $("newTaskButton").addEventListener("click", () => openModal());
+    $("newTaskButton").addEventListener("click", (event) => openModal(null, event.currentTarget));
     $("closeModal").addEventListener("click", closeModal);
     $("cancelButton").addEventListener("click", closeModal);
+    elements.modal.addEventListener("click", (event) => { if (event.target === elements.modal) closeModal(); });
     elements.form.addEventListener("submit", saveTask);
     elements.search.addEventListener("input", renderTasks);
     elements.filter.addEventListener("change", renderTasks);
     $("refreshButton").addEventListener("click", () => { loadTasks(); checkHealth(); });
     $("demoButton").addEventListener("click", loadDemoTasks);
-    $("mobileMenu").addEventListener("click", () => document.querySelector(".sidebar").classList.toggle("open"));
+    $("mobileMenu").addEventListener("click", () => {
+        const sidebar = document.querySelector(".sidebar");
+        const isOpen = sidebar.classList.toggle("open");
+        $("mobileMenu").setAttribute("aria-expanded", String(isOpen));
+    });
+    document.querySelectorAll(".nav-item").forEach((item) => item.addEventListener("click", () => {
+        document.querySelector(".sidebar").classList.remove("open");
+        $("mobileMenu").setAttribute("aria-expanded", "false");
+    }));
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !elements.modal.hidden) closeModal(); });
     checkHealth();
     loadTasks();

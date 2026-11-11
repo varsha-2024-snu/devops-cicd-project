@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/styles.css?v=3">
 </head>
 <body>
     <div class="app-shell">
@@ -33,11 +33,11 @@
 
         <main class="main-content">
             <header class="topbar">
-                <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation">☰</button>
+                <button class="mobile-menu" id="mobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
                 <div class="breadcrumb"><span>Workspace</span><b>/</b><strong>Overview</strong></div>
                 <div class="topbar-actions">
                     <div class="health-pill" id="healthPill"><span class="health-dot"></span><span id="healthText">Checking API…</span></div>
-                    <button class="avatar" aria-label="Project workspace">TF</button>
+                    <div class="avatar" aria-hidden="true">TF</div>
                 </div>
             </header>
 
@@ -116,7 +116,7 @@
             <form id="taskForm">
                 <input type="hidden" id="taskId">
                 <label for="titleInput">Task title <span>*</span></label>
-                <input id="titleInput" name="title" maxlength="200" required placeholder="e.g. Prepare project documentation">
+                <input id="titleInput" name="title" maxlength="200" required aria-describedby="titleError" placeholder="e.g. Prepare project documentation">
                 <div class="field-meta"><span id="titleError" class="field-error"></span><span>Max 200 characters</span></div>
                 <label for="descriptionInput">Description <em>optional</em></label>
                 <textarea id="descriptionInput" name="description" maxlength="2000" rows="4" placeholder="Add context, links, or acceptance criteria…"></textarea>
@@ -132,6 +132,6 @@
         </section>
     </div>
     <div class="toast-container" id="toastContainer" aria-live="polite"></div>
-    <script src="/app.js"></script>
+    <script src="/app.js?v=3"></script>
 </body>
 </html>
