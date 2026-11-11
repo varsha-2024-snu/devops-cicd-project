@@ -73,10 +73,10 @@ Browser automation was executed with Playwright against the local Spring Boot ap
 
 ## Azure verification
 
-- GitHub Actions `build-and-test`: **NOT TESTED YET FOR THIS FIX COMMIT**
-- GitHub Actions `publish-and-deploy`: **NOT TESTED YET FOR THIS FIX COMMIT**
-- Live Azure health endpoint: **PASS** before this fix deployment; will be rechecked after deployment.
-- Live Azure frontend: **PASS** before this fix deployment; will be rechecked after deployment.
+- GitHub Actions `build-and-test`: **PASS** for fix commit `1510775`
+- GitHub Actions `publish-and-deploy`: **PASS** for fix commit `1510775`
+- Live Azure health endpoint: **PASS** after deployment, HTTP 200 with status `UP`.
+- Live Azure frontend: **PASS** after deployment; cache-busted `styles.css?v=3` and `app.js?v=3` are served.
 
 ## Final functional checklist
 
@@ -101,7 +101,7 @@ Browser automation was executed with Playwright against the local Spring Boot ap
 | No blocking overlay | PASS |
 | Maven verification | PASS |
 | Docker build | PASS |
-| Post-fix Azure deployment | NOT TESTED YET |
+| Post-fix Azure deployment | PASS |
 
 ## Remaining known issues
 
