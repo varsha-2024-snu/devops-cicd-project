@@ -94,7 +94,7 @@ Browser automation was executed with Playwright against the local Spring Boot ap
 | Dynamic statistics | PASS |
 | Refresh/reload | PASS |
 | API health indicator | PASS |
-| Demo data button | NOT TESTED IN THIS QA RUN |
+| Demo data button | PASS |
 | Desktop viewport | PASS |
 | Mobile viewport | PASS |
 | Keyboard focus handling | PASS |
