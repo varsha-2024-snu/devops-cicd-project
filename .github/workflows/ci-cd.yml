@@ -96,6 +96,7 @@ jobs:
         run: |
           sed -i "s|ghcr.io/varsha-2024-snu/devops-cicd-project:latest|${IMAGE_TAG}|g" k8s/deployment.yaml
           kubectl create namespace taskmanager
+          kubectl apply -f k8s/configmap.yaml
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
           kubectl rollout status deployment/taskmanager -n taskmanager --timeout=180s

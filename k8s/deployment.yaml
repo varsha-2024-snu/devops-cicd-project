@@ -24,6 +24,12 @@ spec:
         - name: taskmanager
           image: ghcr.io/varsha-2024-snu/devops-cicd-project:latest
           imagePullPolicy: IfNotPresent
+          env:
+            - name: WELCOME_MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: taskmanager-config
+                  key: WELCOME_MESSAGE
           ports:
             - name: http
               containerPort: 8080

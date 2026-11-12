@@ -50,6 +50,15 @@
         }
     }
 
+    async function loadWelcomeMessage() {
+        try {
+            const config = await request("/api/config");
+            if (config.welcomeMessage) $("welcomeMessage").textContent = config.welcomeMessage;
+        } catch (_) {
+            $("welcomeMessage").textContent = "Welcome to Task Manager!";
+        }
+    }
+
     function updateStats() {
         const count = (status) => state.tasks.filter((task) => task.status === status).length;
         $("totalCount").textContent = state.tasks.length;
@@ -188,5 +197,6 @@
     }));
     document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !elements.modal.hidden) closeModal(); });
     checkHealth();
+    loadWelcomeMessage();
     loadTasks();
 }());
