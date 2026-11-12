@@ -67,8 +67,61 @@ jobs:
       - name: Scan repository and commit history
         run: gitleaks git --redact --no-banner .
 
+  kubernetes-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up kind cluster
+        uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: taskmanager-cluster
+
+      - name: Build application image
+        env:
+          IMAGE_TAG: taskmanager:${{ github.sha }}
+        run: docker build --tag "$IMAGE_TAG" .
+
+      - name: Load application image into kind
+        env:
+          IMAGE_TAG: taskmanager:${{ github.sha }}
+        run: kind load docker-image "$IMAGE_TAG" --name taskmanager-cluster
+
+      - name: Deploy application to Kubernetes
+        env:
+          IMAGE_TAG: taskmanager:${{ github.sha }}
+        run: |
+          sed -i "s|ghcr.io/varsha-2024-snu/devops-cicd-project:latest|${IMAGE_TAG}|g" k8s/deployment.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl rollout status deployment/taskmanager -n taskmanager --timeout=180s
+          kubectl get pods -n taskmanager
+          kubectl get service taskmanager-service -n taskmanager
+
+      - name: Verify Kubernetes service health
+        run: |
+          kubectl port-forward -n taskmanager service/taskmanager-service 8081:8080 > /tmp/taskmanager-port-forward.log 2>&1 &
+          PORT_FORWARD_PID=$!
+          trap 'kill "$PORT_FORWARD_PID" 2>/dev/null || true' EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error --max-time 10 \
+              http://127.0.0.1:8081/api/health; then
+              echo "Kubernetes deployment is healthy."
+              exit 0
+            fi
+            sleep 2
+          done
+
+          cat /tmp/taskmanager-port-forward.log
+          echo "Kubernetes health check failed."
+          exit 1
+
   publish-and-deploy:
-    needs: [build-and-test, security-scan]
+    needs: [build-and-test, security-scan, kubernetes-test]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
